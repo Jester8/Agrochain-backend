@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "cockroachdb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  firstName     String
+  lastName      String
+  email         String    @unique
+  phone         String?
+  passwordHash  String
+  dateOfBirth   DateTime
+  isVerified    Boolean   @default(false)
+  trustScore    Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  farmProfile   FarmProfile?
+  refreshTokens RefreshToken[]
+}
+
+model FarmProfile {
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  farmName         String
+  farmSizeHectares Float
+  primaryCrop      String
+  state            String
+  lga              String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// One row per refresh token, so a single device/session can be revoked
+// (logout, "log out of all devices") without invalidating every session.
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}

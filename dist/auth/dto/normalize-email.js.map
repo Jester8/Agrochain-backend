@@ -1,0 +1,1 @@
+{"version":3,"file":"normalize-email.js","sourceRoot":"","sources":["../../../src/auth/dto/normalize-email.ts"],"names":[],"mappings":";;AAIA,wCAEC;AAFD,SAAgB,cAAc,CAAC,EAAE,KAAK,EAAqB;IACzD,OAAO,OAAO,KAAK,KAAK,QAAQ,CAAC,CAAC,CAAC,KAAK,CAAC,IAAI,EAAE,CAAC,WAAW,EAAE,CAAC,CAAC,CAAC,KAAK,CAAC;AACxE,CAAC"}
