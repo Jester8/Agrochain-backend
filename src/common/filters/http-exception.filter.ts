@@ -1,13 +1,23 @@
-import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from '@nestjs/common';
+import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { Response } from 'express';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger('ExceptionFilter');
+
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
 
     const status = exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
+
+    // Anything that isn't a deliberate HttpException (a validation failure,
+    // an explicit BadRequestException, etc.) is unexpected - log the real
+    // stack trace server-side, since the client only ever gets a generic
+    // message for 500s.
+    if (!(exception instanceof HttpException)) {
+      this.logger.error(exception instanceof Error ? exception.stack : exception);
+    }
 
     // Nest's built-in exceptions (and ValidationPipe's 400s) wrap the actual
     // message inside an object like { statusCode, message, error } rather
