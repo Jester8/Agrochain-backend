@@ -2,7 +2,7 @@
   "name": "agrochain-backend",
   "version": "0.1.0",
   "private": true,
-  "description": "AgroChain backend - authentication service (POC)",
+  "description": "AgroChain backend - auth, marketplace, journal and waitlist API",
   "scripts": {
     "build": "nest build",
     "start": "nest start",
@@ -10,7 +10,10 @@
     "start:prod": "node dist/main",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "prisma:deploy": "prisma migrate deploy",
+    "db:seed": "prisma db seed",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.4",
@@ -30,7 +33,6 @@
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
-    "resend": "^4.0.0",
     "rxjs": "^7.8.1"
   },
   "devDependencies": {
@@ -49,5 +51,8 @@
     "@prisma/engines@5.22.0": true,
     "argon2@0.41.1": true,
     "prisma@5.22.0": true
+  },
+  "prisma": {
+    "seed": "ts-node --transpile-only prisma/seed.ts"
   }
 }

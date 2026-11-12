@@ -36,9 +36,19 @@ function usedResetTokenKey(tokenHash: string) {
   return `resettoken:used:${tokenHash}`;
 }
 
-function publicUser(user: { id: string; firstName: string; lastName: string; email: string; phone: string | null; isVerified: boolean; trustScore: number }) {
-  const { id, firstName, lastName, email, phone, isVerified, trustScore } = user;
-  return { id, firstName, lastName, email, phone, isVerified, trustScore };
+function publicUser(user: {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string | null;
+  isVerified: boolean;
+  trustScore: number;
+  role: string;
+  state: string | null;
+}) {
+  const { id, firstName, lastName, email, phone, isVerified, trustScore, role, state } = user;
+  return { id, firstName, lastName, email, phone, isVerified, trustScore, role, state };
 }
 
 @Injectable()
@@ -123,53 +133,49 @@ export class AuthService {
     }
 
     const passwordHash = await argon2.hash(dto.password, { type: argon2.argon2id });
+    const role = dto.role ?? 'farmer';
+    const hasFarm = role === 'farmer' || role === 'cooperative';
+
+    const farm = hasFarm
+      ? {
+          farmName: dto.farmName!,
+          farmSizeHectares: dto.farmSizeHectares!,
+          primaryCrop: dto.primaryCrop!,
+          state: dto.state,
+          lga: dto.lga!,
+        }
+      : null;
+
+    const profile = {
+      firstName: dto.firstName,
+      lastName: dto.lastName,
+      phone: dto.phone,
+      dateOfBirth: new Date(dto.dateOfBirth),
+      passwordHash,
+      role,
+      state: dto.state,
+      lga: dto.lga ?? null,
+    };
+
+    // Re-registering an unverified account may switch to a non-farm role;
+    // drop the stale farm profile in that case.
+    if (existing && !farm) {
+      await this.prisma.farmProfile.deleteMany({ where: { userId: existing.id } });
+    }
 
     const user = existing
       ? await this.prisma.user.update({
           where: { id: existing.id },
           data: {
-            firstName: dto.firstName,
-            lastName: dto.lastName,
-            phone: dto.phone,
-            dateOfBirth: new Date(dto.dateOfBirth),
-            passwordHash,
-            farmProfile: {
-              upsert: {
-                create: {
-                  farmName: dto.farmName,
-                  farmSizeHectares: dto.farmSizeHectares,
-                  primaryCrop: dto.primaryCrop,
-                  state: dto.state,
-                  lga: dto.lga,
-                },
-                update: {
-                  farmName: dto.farmName,
-                  farmSizeHectares: dto.farmSizeHectares,
-                  primaryCrop: dto.primaryCrop,
-                  state: dto.state,
-                  lga: dto.lga,
-                },
-              },
-            },
+            ...profile,
+            farmProfile: farm ? { upsert: { create: farm, update: farm } } : undefined,
           },
         })
       : await this.prisma.user.create({
           data: {
-            firstName: dto.firstName,
-            lastName: dto.lastName,
+            ...profile,
             email: dto.email,
-            phone: dto.phone,
-            dateOfBirth: new Date(dto.dateOfBirth),
-            passwordHash,
-            farmProfile: {
-              create: {
-                farmName: dto.farmName,
-                farmSizeHectares: dto.farmSizeHectares,
-                primaryCrop: dto.primaryCrop,
-                state: dto.state,
-                lga: dto.lga,
-              },
-            },
+            farmProfile: farm ? { create: farm } : undefined,
           },
         });
 

@@ -2,26 +2,43 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// Neon Postgres. DATABASE_URL is the pooled connection (host contains "-pooler")
+// used by the app; DIRECT_URL is the direct connection used by `prisma migrate`.
 datasource db {
-  provider = "cockroachdb"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  farmer
+  cooperative
+  buyer
+  aggregator
 }
 
 model User {
-  id            String    @id @default(uuid())
-  firstName     String
-  lastName      String
-  email         String    @unique
-  phone         String?
-  passwordHash  String
-  dateOfBirth   DateTime
-  isVerified    Boolean   @default(false)
-  trustScore    Int       @default(0)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id           String   @id @default(uuid())
+  firstName    String
+  lastName     String
+  email        String   @unique
+  phone        String?
+  passwordHash String
+  dateOfBirth  DateTime
+  isVerified   Boolean  @default(false)
+  trustScore   Int      @default(0)
+  // Farmers and cooperatives have a FarmProfile; buyers and aggregators
+  // record where they operate on the user row instead.
+  role         UserRole @default(farmer)
+  state        String?
+  lga          String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   farmProfile   FarmProfile?
   refreshTokens RefreshToken[]
+  listings      Listing[]
+  offers        Offer[]
 }
 
 model FarmProfile {
@@ -51,4 +68,105 @@ model RefreshToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+enum ListingStatus {
+  active
+  sold
+  hidden
+}
+
+model Listing {
+  id          String        @id @default(uuid())
+  slug        String        @unique
+  title       String
+  localName   String?
+  // grains | tubers | vegetables | fruits | cash-crops | spices | oils
+  category    String
+  state       String
+  lga         String
+  // Whole naira per unit.
+  price       Int
+  unit        String
+  minOrder    Int           @default(1)
+  available   Int           @default(0)
+  grade       String        @default("A")
+  verified    Boolean       @default(false)
+  harvestedOn DateTime      @db.Date
+  image       String        @default("")
+  description String        @default("")
+  // Display snapshot of the seller: { name, type, since, rating, trades, verified }.
+  // Seeded/sample listings have a snapshot but no sellerId.
+  seller      Json
+  // Copy of seller.name, so listings can be searched by seller.
+  sellerName  String        @default("")
+  // Harvest passport steps: [{ label, date, place }].
+  trace       Json          @default("[]")
+  status      ListingStatus @default(active)
+  sellerId    String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  sellerUser User?   @relation(fields: [sellerId], references: [id], onDelete: SetNull)
+  offers     Offer[]
+
+  @@index([status, category, state])
+}
+
+enum OfferStatus {
+  pending
+  accepted
+  declined
+  withdrawn
+}
+
+model Offer {
+  id           String      @id @default(uuid())
+  listingId    String
+  buyerId      String
+  quantity     Int
+  pricePerUnit Int
+  message      String      @default("")
+  status       OfferStatus @default(pending)
+  createdAt    DateTime    @default(now())
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  buyer   User    @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@index([buyerId])
+}
+
+model Post {
+  slug        String   @id
+  title       String
+  excerpt     String
+  category    String
+  author      String
+  publishedAt DateTime @db.Date
+  readMinutes Int      @default(4)
+  cover       String   @default("")
+  featured    Boolean  @default(false)
+  // Article blocks: [{ type: "p" | "h2" | "quote", text } | { type: "list", items }].
+  body        Json     @default("[]")
+  published   Boolean  @default(true)
+}
+
+model MarketPrice {
+  id        Int      @id @default(autoincrement())
+  commodity String
+  market    String
+  unit      String
+  price     Int
+  // Week-on-week change in percent.
+  change    Float    @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@unique([commodity, market])
+}
+
+model WaitlistEntry {
+  email     String   @id
+  source    String   @default("site")
+  createdAt DateTime @default(now())
 }

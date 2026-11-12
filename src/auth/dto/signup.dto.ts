@@ -1,6 +1,14 @@
-import { IsDateString, IsEmail, IsNumber, IsOptional, IsString, Matches, Min } from 'class-validator';
+import { IsDateString, IsEmail, IsIn, IsNumber, IsOptional, IsString, Matches, Min, ValidateIf } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { normalizeEmail } from './normalize-email';
+
+export const USER_ROLES = ['farmer', 'cooperative', 'buyer', 'aggregator'] as const;
+export type UserRoleValue = (typeof USER_ROLES)[number];
+
+// Farmers and cooperatives register a farm; buyers and aggregators don't.
+// `role` is optional and defaults to "farmer", so existing clients (the Expo
+// app) keep working unchanged.
+const hasFarm = (dto: SignupDto) => !dto.role || dto.role === 'farmer' || dto.role === 'cooperative';
 
 export class SignupDto {
   @IsString()
@@ -26,19 +34,27 @@ export class SignupDto {
   })
   password!: string;
 
-  @IsString()
-  farmName!: string;
+  @IsOptional()
+  @IsIn(USER_ROLES)
+  role?: UserRoleValue;
 
+  @ValidateIf(hasFarm)
+  @IsString()
+  farmName?: string;
+
+  @ValidateIf(hasFarm)
   @IsNumber()
   @Min(0)
-  farmSizeHectares!: number;
+  farmSizeHectares?: number;
 
+  @ValidateIf(hasFarm)
   @IsString()
-  primaryCrop!: string;
+  primaryCrop?: string;
 
   @IsString()
   state!: string;
 
+  @ValidateIf(hasFarm)
   @IsString()
-  lga!: string;
+  lga?: string;
 }

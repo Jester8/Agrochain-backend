@@ -9,6 +9,8 @@ import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
 import { MailModule } from './mail/mail.module';
 import { AuthModule } from './auth/auth.module';
+import { MarketplaceModule } from './marketplace/marketplace.module';
+import { ContentModule } from './content/content.module';
 
 @Controller()
 class HealthController {
@@ -30,6 +32,8 @@ class HealthController {
     RedisModule,
     MailModule,
     AuthModule,
+    MarketplaceModule,
+    ContentModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

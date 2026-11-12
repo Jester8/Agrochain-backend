@@ -16,8 +16,15 @@ export const validationSchema = Joi.object({
   JWT_REFRESH_EXPIRES_IN: Joi.string().default('30d'),
   JWT_RESET_EXPIRES_IN: Joi.string().default('10m'),
 
-  RESEND_API_KEY: Joi.string().allow('').default(''),
-  MAIL_FROM: Joi.string().default('AgroChain <onboarding@resend.dev>'),
+  // Neon direct (non-pooled) connection, used only by `prisma migrate`.
+  DIRECT_URL: Joi.string().uri().optional(),
+
+  // Brevo transactional email. Leave blank in development to print emails to the console.
+  BREVO_API_KEY: Joi.string().allow('').default(''),
+  MAIL_FROM: Joi.string().default('AgroChain <hello@agrochain.africa>'),
+  BREVO_WAITLIST_LIST_ID: Joi.number().integer().allow('').optional(),
+  OPS_EMAIL: Joi.string().email().default('info@agrochain.africa'),
+  APP_URL: Joi.string().uri().default('https://agrochain.africa'),
 
   OTP_TTL_SECONDS: Joi.number().default(600),
 

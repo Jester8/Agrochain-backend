@@ -16,8 +16,8 @@ export function buildOtpEmailHtml({ code, purpose }: OtpEmailOptions): string {
   const heading = purpose === 'signup' ? 'Verify your email' : 'Reset your password';
   const bodyText =
     purpose === 'signup'
-      ? "Enter this code in the app to verify your email and finish creating your AgroChain account."
-      : 'Enter this code in the app to continue resetting your AgroChain account password.';
+      ? "Enter this code in the AgroChain app or website to verify your email and finish creating your AgroChain account."
+      : 'Enter this code in the AgroChain app or website to continue resetting your AgroChain account password.';
   const codeDigits = code.split('');
 
   return `<!DOCTYPE html>

@@ -1,0 +1,45 @@
+# Render Blueprint: https://render.com/docs/blueprint-spec
+# Dashboard -> New -> Blueprint -> select this repo. Values marked sync:false are
+# entered in the dashboard (they're secrets and never live in git).
+services:
+  - type: web
+    name: agrochain-api
+    runtime: node
+    region: frankfurt # pair with a Neon project in AWS eu-central-1 (Frankfurt)
+    plan: starter
+    # --include=dev: the Nest CLI and Prisma CLI are devDependencies, and NODE_ENV=production
+    # would otherwise make npm skip them during the build.
+    buildCommand: npm ci --include=dev && npm run build
+    preDeployCommand: npx prisma migrate deploy
+    startCommand: npm run start:prod
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "20"
+      - key: DATABASE_URL # Neon pooled connection string
+        sync: false
+      - key: DIRECT_URL # Neon direct connection string (used for migrations)
+        sync: false
+      - key: REDIS_URL # Upstash ioredis URL (rediss://...)
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_RESET_SECRET
+        generateValue: true
+      - key: BREVO_API_KEY
+        sync: false
+      - key: MAIL_FROM
+        value: AgroChain <hello@agrochain.africa>
+      - key: BREVO_WAITLIST_LIST_ID
+        sync: false
+      - key: OPS_EMAIL
+        value: info@agrochain.africa
+      - key: APP_URL
+        value: https://agrochain.africa
+      - key: CORS_ORIGINS
+        value: https://agrochain.africa,https://www.agrochain.africa
